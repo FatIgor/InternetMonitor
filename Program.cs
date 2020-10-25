@@ -14,7 +14,6 @@ namespace InternetMonitor
         [STAThread]
         static void Main()
         {
-            var check = InternetCheck.CheckForInternetConnection();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Form1());
