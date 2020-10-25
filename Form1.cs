@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Media;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -17,7 +18,8 @@ namespace InternetMonitor
         private bool _internetOn;
         private List<string> _logfile;
         private string _logfileName = "internet_states.txt";
-
+        private SoundPlayer _player;
+        
         public Form1()
         {
             InitializeComponent();
@@ -120,6 +122,24 @@ namespace InternetMonitor
                 foreach (var line in _logfile)
                     sw.WriteLine(line);
             }
+        }
+
+        public enum Sounds
+        {
+            GoneOff,
+            ComeOne
+        }
+        
+        // Sets up the SoundPlayer object.
+        private void InitializeSound()
+        {
+            // Create an instance of the SoundPlayer class.
+            _player = new SoundPlayer();
+        }
+
+        private void PlaySound(Sounds whichSound)
+        {
+            
         }
     }
 }
