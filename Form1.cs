@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,10 +15,13 @@ namespace InternetMonitor
     {
         private Timer _timer;
         private bool _internetOn;
-        
+        private List<string> _logfile;
+        private string _logfileName = "internet_states.txt";
+
         public Form1()
         {
             InitializeComponent();
+            ReadLog();
             var startState = InternetCheck.CheckForInternetConnection();
             _internetOn = !startState;
             StateCheck(startState);
@@ -31,7 +35,7 @@ namespace InternetMonitor
                 Interval = tickLength
             };
             _timer.Enabled = true;
-            _timer.Tick+=new System.EventHandler(OnTimerTick);
+            _timer.Tick += new System.EventHandler(OnTimerTick);
         }
 
         private void OnTimerTick(object source, EventArgs e)
@@ -39,9 +43,9 @@ namespace InternetMonitor
             StateCheck(InternetCheck.CheckForInternetConnection());
         }
 
-        private DateTime _onStart;
-        private DateTime _offStart;
-        
+        private DateTime _onStart = new DateTime();
+        private DateTime _offStart = new DateTime();
+
         private void StateCheck(bool latestState)
         {
             if (_internetOn == latestState)
@@ -56,21 +60,66 @@ namespace InternetMonitor
                     currentLength = DateTime.Now - _offStart;
                 }
 
-                currentDurationLabel.Text = String.Format("{0:d2}:{1:d2}:{2:d2}", currentLength.Hours, currentLength.Minutes, currentLength.Seconds);
+                currentDurationLabel.Text = String.Format("{0:d2}:{1:d2}:{2:d2}", currentLength.Hours,
+                    currentLength.Minutes, currentLength.Seconds);
                 return;
             }
+
             _internetOn = latestState;
             if (_internetOn)
             {
-                _onStart=DateTime.Now;
                 connectionStateLabel.Text = "Internet has a connection.";
+                _onStart = DateTime.Now;
+                if (_offStart.Year == 1)
+                    return;
+                var previousLength = DateTime.Now - _offStart;
+                var outputMsg = String.Format("{0:d2}:{1:d2}:{2:d2}", previousLength.Hours, previousLength.Minutes,
+                    previousLength.Seconds);
+                _onStart = DateTime.Now;
+                DumpMessage("Was off for " + outputMsg);
             }
             else
             {
-                _offStart=DateTime.Now;
                 connectionStateLabel.Text = "Internet is not connected.";
+                _offStart = DateTime.Now;
+                if (_onStart.Year == 1)
+                    return;
+                var previousLength = DateTime.Now - _onStart;
+                var outputMsg = String.Format("{0:d2}:{1:d2}:{2:d2}", previousLength.Hours, previousLength.Minutes,
+                    previousLength.Seconds);
+                _onStart = DateTime.Now;
+                DumpMessage("Was on for " + outputMsg);
             }
         }
 
+        private void ReadLog()
+        {
+            string line;
+            _logfile = new List<string>();
+            try
+            {
+                using (StreamReader sr = new StreamReader(_logfileName))
+                {
+                    while ((line = sr.ReadLine()) != null)
+                    {
+                        _logfile.Add(line);
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private void DumpMessage(string msg)
+        {
+            msg = DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToShortTimeString() + " " + msg;
+            _logfile.Add(msg);
+            using (StreamWriter sw = new StreamWriter(_logfileName))
+            {
+                foreach (var line in _logfile)
+                    sw.WriteLine(line);
+            }
+        }
     }
 }
