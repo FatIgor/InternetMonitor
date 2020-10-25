@@ -23,6 +23,7 @@ namespace InternetMonitor
         public Form1()
         {
             InitializeComponent();
+            InitializeSound();
             ReadLog();
             var startState = InternetCheck.CheckForInternetConnection();
             _internetOn = !startState;
@@ -71,6 +72,7 @@ namespace InternetMonitor
             if (_internetOn)
             {
                 connectionStateLabel.Text = "Internet has a connection.";
+                PlaySound(Sounds.ComeOn);
                 _onStart = DateTime.Now;
                 if (_offStart.Year == 1)
                     return;
@@ -83,6 +85,7 @@ namespace InternetMonitor
             else
             {
                 connectionStateLabel.Text = "Internet is not connected.";
+                PlaySound(Sounds.GoneOff);
                 _offStart = DateTime.Now;
                 if (_onStart.Year == 1)
                     return;
@@ -127,7 +130,7 @@ namespace InternetMonitor
         public enum Sounds
         {
             GoneOff,
-            ComeOne
+            ComeOn
         }
         
         // Sets up the SoundPlayer object.
@@ -139,7 +142,20 @@ namespace InternetMonitor
 
         private void PlaySound(Sounds whichSound)
         {
-            
+            string audiofile="";
+            switch (whichSound)
+            {
+                case Sounds.GoneOff:
+                    audiofile = "c:\\off.wav";
+                    break;
+                case Sounds.ComeOn:
+                    audiofile = "c:\\on.wav";
+                    break;
+            }
+
+            _player.SoundLocation = audiofile;
+            _player.LoadAsync();
+            _player.Play();
         }
     }
 }
