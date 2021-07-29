@@ -19,7 +19,12 @@ namespace InternetMonitor
         private List<string> _logfile;
         private string _logfileName = "internet_states.txt";
         private SoundPlayer _player;
-        
+
+        private int _outagesCount = 0;
+        private TimeSpan _totalOnTime = new TimeSpan();
+        private TimeSpan _totalOffTime = new TimeSpan();
+        private TimeSpan _currentLength;
+
         public Form1()
         {
             InitializeComponent();
@@ -28,7 +33,7 @@ namespace InternetMonitor
             var startState = InternetCheck.CheckForInternetConnection();
             _internetOn = !startState;
             StateCheck(startState);
-            StartTimer(1000);
+            StartTimer(10000);
         }
 
         private void StartTimer(int tickLength)
@@ -53,18 +58,18 @@ namespace InternetMonitor
         {
             if (_internetOn == latestState)
             {
-                TimeSpan currentLength;
                 if (_internetOn)
                 {
-                    currentLength = DateTime.Now - _onStart;
+                    _currentLength = DateTime.Now - _onStart;
                 }
                 else
                 {
-                    currentLength = DateTime.Now - _offStart;
+                    _currentLength = DateTime.Now - _offStart;
                 }
 
-                currentDurationLabel.Text = String.Format("{0:d2}:{1:d2}:{2:d2}", currentLength.Hours,
-                    currentLength.Minutes, currentLength.Seconds);
+                currentDurationLabel.Text = String.Format("{0:d2}:{1:d2}:{2:d2}", _currentLength.Hours,
+                    _currentLength.Minutes, _currentLength.Seconds);
+                UpdateCountsDisplay();
                 return;
             }
 
@@ -77,6 +82,7 @@ namespace InternetMonitor
                 if (_offStart.Year == 1)
                     return;
                 var previousLength = DateTime.Now - _offStart;
+                _totalOffTime += previousLength;
                 var outputMsg = String.Format("{0:d2}:{1:d2}:{2:d2}", previousLength.Hours, previousLength.Minutes,
                     previousLength.Seconds);
                 _onStart = DateTime.Now;
@@ -84,17 +90,35 @@ namespace InternetMonitor
             }
             else
             {
+                _outagesCount++;
                 connectionStateLabel.Text = "Internet is not connected.";
                 PlaySound(Sounds.GoneOff);
                 _offStart = DateTime.Now;
                 if (_onStart.Year == 1)
                     return;
                 var previousLength = DateTime.Now - _onStart;
+                _totalOnTime += previousLength;
                 var outputMsg = String.Format("{0:d2}:{1:d2}:{2:d2}", previousLength.Hours, previousLength.Minutes,
                     previousLength.Seconds);
                 _onStart = DateTime.Now;
                 DumpMessage("Was on for " + outputMsg);
             }
+        }
+
+        private void UpdateCountsDisplay()
+        {
+            outageCountLabel.Text = $"Outages: {_outagesCount}";
+            var totalTime = _totalOffTime;
+            if (!_internetOn)
+                totalTime += _currentLength;
+            var time1 = String.Format("{0:d2}:{1:d2}:{2:d2}", totalTime.Hours, totalTime.Minutes,
+                totalTime.Seconds);
+            totalTime = _totalOnTime;
+            if (_internetOn)
+                totalTime += _currentLength;
+            var time2 = String.Format("{0:d2}:{1:d2}:{2:d2}", totalTime.Hours, totalTime.Minutes,
+                totalTime.Seconds);
+            percentagesLabel.Text = $"On: {time2} Off: {time1}";
         }
 
         private void ReadLog()
@@ -132,7 +156,7 @@ namespace InternetMonitor
             GoneOff,
             ComeOn
         }
-        
+
         // Sets up the SoundPlayer object.
         private void InitializeSound()
         {
@@ -142,7 +166,7 @@ namespace InternetMonitor
 
         private void PlaySound(Sounds whichSound)
         {
-            string audiofile="";
+            string audiofile = "";
             switch (whichSound)
             {
                 case Sounds.GoneOff:
